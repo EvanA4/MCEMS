@@ -1,4 +1,4 @@
-name: mcems
+name: mcems-server
 version: '${version}'
 
 main: net.mcems.Main

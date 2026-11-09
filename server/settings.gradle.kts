@@ -1,1 +1,1 @@
-rootProject.name = "mcems-server"
+rootProject.name = "server"
