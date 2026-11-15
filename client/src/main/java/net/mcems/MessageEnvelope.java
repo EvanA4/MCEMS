@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -13,12 +14,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class MessageEnvelope {
-    private static final int MAGIC = 0x4D534731; // "MSG1"
-    private static final int MAX_ENVELOPE_BYTES = 32 * 1024;
-    private static final int MAX_ID_BYTES = 128;
-    private static final int MAX_CIPHERTEXT_BYTES = 16 * 1024;
-    private static final int GCM_TAG_BYTES = CryptoConfig.GCM_TAG_BITS / 8;
-
     private final int protocolVersion;
     private final String senderId;
     private final String recipientId;
@@ -34,27 +29,33 @@ public final class MessageEnvelope {
             UUID sessionId,
             long messageCounter,
             byte[] nonce,
-            byte[] ciphertext) {
-
+            byte[] ciphertext
+    ) {
         if (protocolVersion <= 0) {
-            throw new IllegalArgumentException("protocolVersion must be positive");
+            throw new IllegalArgumentException(
+                    "protocolVersion must be positive"
+            );
         }
+
         this.senderId = requireId(senderId, "senderId");
         this.recipientId = requireId(recipientId, "recipientId");
         this.sessionId = Objects.requireNonNull(sessionId, "sessionId");
 
         if (messageCounter < 0) {
-            throw new IllegalArgumentException("messageCounter must not be negative");
+            throw new IllegalArgumentException(
+                    "messageCounter must not be negative"
+            );
         }
 
         Objects.requireNonNull(nonce, "nonce");
-        if (nonce.length != CryptoConfig.GCM_NONCE_BYTES) {
+        if (nonce.length != ProtocolConstants.GCM_NONCE_BYTES) {
             throw new IllegalArgumentException("Invalid GCM nonce length");
         }
 
         Objects.requireNonNull(ciphertext, "ciphertext");
-        if (ciphertext.length < GCM_TAG_BYTES
-                || ciphertext.length > MAX_CIPHERTEXT_BYTES) {
+        int tagBytes = ProtocolConstants.GCM_TAG_BITS / 8;
+        if (ciphertext.length < tagBytes
+                || ciphertext.length > ProtocolConstants.MAX_CIPHERTEXT_BYTES) {
             throw new IllegalArgumentException("Invalid ciphertext length");
         }
 
@@ -92,14 +93,13 @@ public final class MessageEnvelope {
         return ciphertext.clone();
     }
 
-    /** Encodes this envelope as a bounded, length-prefixed binary payload. */
     public byte[] encode() throws IOException {
         byte[] sender = senderId.getBytes(StandardCharsets.UTF_8);
         byte[] recipient = recipientId.getBytes(StandardCharsets.UTF_8);
-
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
         try (DataOutputStream out = new DataOutputStream(buffer)) {
-            out.writeInt(MAGIC);
+            out.writeInt(ProtocolConstants.MESSAGE_ENVELOPE_MAGIC);
             out.writeInt(protocolVersion);
             writeBytes(out, sender);
             writeBytes(out, recipient);
@@ -111,33 +111,44 @@ public final class MessageEnvelope {
         }
 
         byte[] encoded = buffer.toByteArray();
-        if (encoded.length > MAX_ENVELOPE_BYTES) {
+        if (encoded.length > ProtocolConstants.MAX_ENVELOPE_BYTES) {
             throw new IOException("Envelope exceeds maximum size");
         }
+
         return encoded;
     }
 
-    /** Decodes an envelope, rejecting malformed or oversized payloads. */
     public static MessageEnvelope decode(byte[] encoded) throws IOException {
         Objects.requireNonNull(encoded, "encoded");
-        if (encoded.length == 0 || encoded.length > MAX_ENVELOPE_BYTES) {
+
+        if (encoded.length == 0
+                || encoded.length > ProtocolConstants.MAX_ENVELOPE_BYTES) {
             throw new IOException("Invalid envelope size");
         }
 
         try (DataInputStream in =
                      new DataInputStream(new ByteArrayInputStream(encoded))) {
-            if (in.readInt() != MAGIC) {
+            if (in.readInt() != ProtocolConstants.MESSAGE_ENVELOPE_MAGIC) {
                 throw new IOException("Invalid envelope magic");
             }
 
             int version = in.readInt();
-            String sender = decodeUtf8(readBytes(in, MAX_ID_BYTES));
-            String recipient = decodeUtf8(readBytes(in, MAX_ID_BYTES));
-
+            String sender = decodeUtf8(
+                    readBytes(in, ProtocolConstants.MAX_ID_BYTES)
+            );
+            String recipient = decodeUtf8(
+                    readBytes(in, ProtocolConstants.MAX_ID_BYTES)
+            );
             UUID sessionId = new UUID(in.readLong(), in.readLong());
             long counter = in.readLong();
-            byte[] nonce = readBytes(in, CryptoConfig.GCM_NONCE_BYTES);
-            byte[] ciphertext = readBytes(in, MAX_CIPHERTEXT_BYTES);
+            byte[] nonce = readBytes(
+                    in,
+                    ProtocolConstants.GCM_NONCE_BYTES
+            );
+            byte[] ciphertext = readBytes(
+                    in,
+                    ProtocolConstants.MAX_CIPHERTEXT_BYTES
+            );
 
             if (in.available() != 0) {
                 throw new IOException("Trailing data in envelope");
@@ -145,12 +156,18 @@ public final class MessageEnvelope {
 
             try {
                 return new MessageEnvelope(
-                        version, sender, recipient, sessionId,
-                        counter, nonce, ciphertext);
+                        version,
+                        sender,
+                        recipient,
+                        sessionId,
+                        counter,
+                        nonce,
+                        ciphertext
+                );
             } catch (IllegalArgumentException | NullPointerException e) {
                 throw new IOException("Invalid envelope fields", e);
             }
-        } catch (java.io.EOFException e) {
+        } catch (EOFException e) {
             throw new IOException("Truncated envelope", e);
         }
     }
@@ -158,11 +175,16 @@ public final class MessageEnvelope {
     private static String requireId(String value, String fieldName) {
         Objects.requireNonNull(value, fieldName);
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        if (value.isBlank() || bytes.length > MAX_ID_BYTES) {
+
+        if (value.isBlank()
+                || bytes.length > ProtocolConstants.MAX_ID_BYTES) {
             throw new IllegalArgumentException(
                     fieldName + " must be nonblank and at most "
-                            + MAX_ID_BYTES + " UTF-8 bytes");
+                            + ProtocolConstants.MAX_ID_BYTES
+                            + " UTF-8 bytes"
+            );
         }
+
         return value;
     }
 
@@ -175,7 +197,10 @@ public final class MessageEnvelope {
     private static byte[] readBytes(DataInputStream in, int maximumLength)
             throws IOException {
         int length = in.readInt();
-        if (length < 0 || length > maximumLength || length > in.available()) {
+
+        if (length < 0
+                || length > maximumLength
+                || length > in.available()) {
             throw new IOException("Invalid field length");
         }
 
