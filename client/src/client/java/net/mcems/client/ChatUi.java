@@ -9,10 +9,33 @@ import net.minecraft.ChatFormatting;
 
 public final class ChatUi {
 
-    private static final String PREFIX = "[Secure] ";
+    private static final Component PREFIX =
+            Component.literal("[")
+                    .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal("MCEMS")
+                        .withStyle(ChatFormatting.DARK_GREEN))
+                .append(Component.literal("] ")
+                        .withStyle(ChatFormatting.GREEN));
+
 
     private ChatUi() {
         // Utility class.
+    }
+
+    public static Component genSentMessageComponent(String to, String message) {
+        return PREFIX.copy()
+                .append(Component.literal("You -> " + to)
+                        .withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(": ")
+                        .withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(message)
+                        .withStyle(ChatFormatting.WHITE));
+    }
+
+    public static Component genSentHandshakeComponent(String to) {
+        return PREFIX.copy()
+                .append(Component.literal("Sent handshake request to " + to + ".")
+                        .withStyle(ChatFormatting.GRAY));
     }
 
     /**
@@ -23,10 +46,9 @@ public final class ChatUi {
         Objects.requireNonNull(senderName, "senderName");
         Objects.requireNonNull(message, "message");
 
-        Component line = Component.literal(PREFIX)
-                .withStyle(ChatFormatting.AQUA)
+        Component line = PREFIX.copy()
                 .append(Component.literal(senderName)
-                        .withStyle(ChatFormatting.YELLOW))
+                        .withStyle(ChatFormatting.GOLD))
                 .append(Component.literal(": ")
                         .withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(message)
@@ -38,8 +60,7 @@ public final class ChatUi {
     public static void showStatus(String message) {
         Objects.requireNonNull(message, "message");
 
-        Component line = Component.literal(PREFIX)
-                .withStyle(ChatFormatting.AQUA)
+        Component line = PREFIX.copy()
                 .append(Component.literal(message)
                         .withStyle(ChatFormatting.GRAY));
 
@@ -49,8 +70,7 @@ public final class ChatUi {
     public static void showError(String message) {
         Objects.requireNonNull(message, "message");
 
-        Component line = Component.literal(PREFIX)
-                .withStyle(ChatFormatting.AQUA)
+        Component line = PREFIX.copy()
                 .append(Component.literal(message)
                         .withStyle(ChatFormatting.RED));
 

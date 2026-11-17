@@ -59,7 +59,7 @@ public final class ChatCommandHandler {
                                                         return runAction(
                                                                 context.getSource(),
                                                                 () -> handshakeStarter.start(player),
-                                                                "Handshake request sent.");
+                                                                    ChatUi.genSentHandshakeComponent(player));
                                                     })))
 
                                     .then(ClientCommands.literal("send")
@@ -82,7 +82,7 @@ public final class ChatCommandHandler {
                                                                         context.getSource(),
                                                                         () -> messageSender.send(
                                                                                 player, message),
-                                                                        "Private message sent.");
+                                                                            ChatUi.genSentMessageComponent(player, message));
                                                             }))))
                     );
                 });
@@ -91,13 +91,12 @@ public final class ChatCommandHandler {
     private static int runAction(
             FabricClientCommandSource source,
             ThrowingAction action,
-            String successMessage) {
+            Component successMessage) {
 
         try {
             action.run();
 
-            source.sendFeedback(
-                    Component.literal(successMessage));
+            source.sendFeedback(successMessage);
 
             return 1;
 

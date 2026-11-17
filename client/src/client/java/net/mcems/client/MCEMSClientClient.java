@@ -72,7 +72,7 @@ public final class MCEMSClientClient implements ClientModInitializer {
 						accepted.sessionKey());
 				Arrays.fill(accepted.sessionKey(), (byte) 0);
 
-				ChatUi.showStatus("Secure session established with " + offer.senderId());
+				ChatUi.showStatus("Secure session established with " + uuidToName(offer.senderId()) + ".");
 				return;
 			}
 
@@ -93,7 +93,7 @@ public final class MCEMSClientClient implements ClientModInitializer {
 						established.sessionKey());
 				Arrays.fill(established.sessionKey(), (byte) 0);
 
-				ChatUi.showStatus("Secure session established with " + established.peerId());
+				ChatUi.showStatus("Secure session established with " + uuidToName(established.peerId()) + ".");
 				return;
 			}
 
@@ -101,47 +101,41 @@ public final class MCEMSClientClient implements ClientModInitializer {
 				handleMessage(messagePayload.envelope());
 			}
 		} catch (Exception e) {
+			Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(
+				Component.literal(e.toString())
+			);
+
 			LOGGER.error("Could not process secure-message payload", e);
 			ChatUi.showError("Could not process secure-message payload.");
 		}
 	}
 
 	private void startHandshake(String playerName) throws Exception {
-		String peerId = onlinePlayerId(playerName);
+		String peerId = nameToUUID(playerName);
 		String localId = localPlayerId();
 
 		HandshakeService.Offer offer =
 				handshakeService.createOffer(localId, peerId);
 
 		byte[] toSend = NetworkPayloads.encodeOffer(offer);
-
-		int previewLength = Math.min(toSend.length, 16);
-		String preview = HexFormat.of().formatHex(toSend, 0, previewLength);
-		Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(
-			Component.nullToEmpty(
-				String.format("Received payload: length=%d, first bytes=%s", toSend.length, preview
-			))
-		);
-
 		FabricNetworkHandler.sendToServer(toSend);
-		ChatUi.showStatus("Handshake request sent to " + peerId);
 	}
 
 	private void sendPrivateMessage(String playerName, String message) throws Exception {
-		String peerId = onlinePlayerId(playerName);
+		String peerId = nameToUUID(playerName);
 		if (message == null || message.isBlank()) {
-			throw new IllegalArgumentException("Message must not be blank");
+			throw new IllegalArgumentException("Message must not be blank.");
 		}
 
 		UUID sessionId = sessionsByPeer.get(peerId);
 		if (sessionId == null) {
-			throw new IllegalStateException("No secure session with " + peerId);
+			throw new IllegalStateException("No secure session with " + playerName + ".");
 		}
 
 		byte[] key = sessionManager.getKey(sessionId);
 		if (key == null) {
 			sessionsByPeer.remove(peerId);
-			throw new IllegalStateException("Secure session has expired");
+			throw new IllegalStateException("Secure session has expired.");
 		}
 
 		try {
@@ -214,7 +208,7 @@ public final class MCEMSClientClient implements ClientModInitializer {
 					.decode(ByteBuffer.wrap(plaintext))
 					.toString();
 
-			ChatUi.showPrivateMessage(envelope.senderId(), message);
+			ChatUi.showPrivateMessage(uuidToName(envelope.senderId()), message);
 		} finally {
 			Arrays.fill(key, (byte) 0);
 			Arrays.fill(aad, (byte) 0);
@@ -251,11 +245,11 @@ public final class MCEMSClientClient implements ClientModInitializer {
 				.array();
 	}
 
-	private static String onlinePlayerId(String playerName) {
+	private static String nameToUUID(String playerName) {
 		var handler = Minecraft.getInstance().getConnection();
 
 		if (handler == null) {
-			throw new IllegalStateException("You must be connected to a server");
+			throw new IllegalStateException("You must be connected to a server.");
 		}
 
 		return handler.getListedOnlinePlayers().stream()
@@ -263,13 +257,31 @@ public final class MCEMSClientClient implements ClientModInitializer {
 				.filter(profile -> profile.name().equalsIgnoreCase(playerName))
 				.findFirst()
 				.map(profile -> profile.id().toString())
-				.orElseThrow(() -> new IllegalArgumentException("Player is not online: " + playerName));
+				.orElseThrow(() -> new IllegalArgumentException(playerName + " is not online."));
 	}
+
+	private static String uuidToName(String uuid) {
+		var handler = Minecraft.getInstance().getConnection();
+
+		if (handler == null) {
+			throw new IllegalStateException("You must be connected to a server.");
+		}
+
+		var playerId = UUID.fromString(uuid.trim());
+
+		return handler.getListedOnlinePlayers().stream()
+				.map(entry -> entry.getProfile())
+				.filter(profile -> profile.id().equals(playerId))
+				.findFirst()
+				.map(profile -> profile.name())
+				.orElseThrow(() -> new IllegalArgumentException("Cannot find player with UUID " + uuid + "."));
+	}
+
 
 	private static String localPlayerId() {
 		var player = net.minecraft.client.Minecraft.getInstance().player;
 		if (player == null) {
-			throw new IllegalStateException("You must be in a world to use secure messaging");
+			throw new IllegalStateException("You must be in a world to use MCEMS.");
 		}
 		return player.getStringUUID();
 	}
