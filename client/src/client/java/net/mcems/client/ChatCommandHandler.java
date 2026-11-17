@@ -101,9 +101,7 @@ public final class ChatCommandHandler {
             return 1;
 
         } catch (Exception e) {
-            source.sendError(
-                    Component.literal(
-                            "Secure message action failed: " + safeMessage(e)));
+            source.sendError(ChatUi.genErrorMessage(safeMessage(e)));
 
             return 0;
         }

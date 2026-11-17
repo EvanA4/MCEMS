@@ -38,6 +38,17 @@ public final class ChatUi {
                         .withStyle(ChatFormatting.GRAY));
     }
 
+    public static Component genErrorMessage(String message) {
+        return Component.literal("[")
+                        .withStyle(ChatFormatting.DARK_RED)
+                .append(Component.literal("MCEMS")
+                        .withStyle(ChatFormatting.RED))
+                .append(Component.literal("] ")
+                        .withStyle(ChatFormatting.DARK_RED))
+                .append(Component.literal("Error: " + message)
+                        .withStyle(ChatFormatting.RED));
+    }
+
     /**
      * Displays a decrypted message locally.
      * Does not send anything to the server.
