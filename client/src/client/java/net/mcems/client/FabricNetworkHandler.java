@@ -69,14 +69,19 @@ public final class FabricNetworkHandler {
                 new Type<>(Identifier.fromNamespaceAndPath(
                         "mcems", "secure_message"));
 
-        public static final StreamCodec<
-                RegistryFriendlyByteBuf, WirePayload> CODEC =
+        public static final StreamCodec<RegistryFriendlyByteBuf, WirePayload> CODEC =
                 StreamCodec.of(
-                        (buf, payload) ->
-                                buf.writeByteArray(payload.data),
-                        buf -> new WirePayload(
-                                buf.readByteArray(32 * 1024))
-                );
+                        (buf, payload) -> buf.writeBytes(payload.data),
+                        buf -> {
+                            int length = buf.readableBytes();
+                            if (length <= 0 || length > 32 * 1024) {
+                                throw new IllegalArgumentException("Invalid payload size");
+                            }
+
+                            byte[] data = new byte[length];
+                            buf.readBytes(data);
+                            return new WirePayload(data);
+                        });
 
         public WirePayload {
             Objects.requireNonNull(data, "data");

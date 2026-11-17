@@ -1,8 +1,12 @@
 package net.mcems;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Main extends JavaPlugin {
+    private final Logger logger = LoggerFactory.getLogger("Main");
+
     private PlayerIdentityService identities;
     private SessionStore sessionStore;
     private HandshakeCoordinator handshakeCoordinator;
@@ -16,7 +20,7 @@ public final class Main extends JavaPlugin {
             sessionStore = new SessionStore();
 
             handshakeCoordinator =
-                    new HandshakeCoordinator(this, identities);
+                    new HandshakeCoordinator(this, identities, sessionStore);
 
             privateMessageService = new PrivateMessageService(
                     this,

@@ -18,13 +18,16 @@ public final class HandshakeCoordinator
     private final Plugin plugin;
     private final PlayerIdentityService identities;
     private final Map<UUID, PendingHandshake> pending = new HashMap<>();
+    private final SessionStore sessionStore;
 
     public HandshakeCoordinator(
             Plugin plugin,
-            PlayerIdentityService identities
+            PlayerIdentityService identities,
+            SessionStore sessionStore
     ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.identities = Objects.requireNonNull(identities, "identities");
+        this.sessionStore = sessionStore;
     }
 
     @Override
@@ -126,6 +129,12 @@ public final class HandshakeCoordinator
         }
 
         // Consume before sending so a repeated response cannot be relayed.
+        sessionStore.register(
+                response.sessionId(),
+                handshake.initiatorId,
+                handshake.recipientId,
+                System.currentTimeMillis() + 60 * 60 * 1000L
+        );
         pending.remove(response.sessionId());
         send(initiator, NetworkPayloads.encodeResponse(response));
     }

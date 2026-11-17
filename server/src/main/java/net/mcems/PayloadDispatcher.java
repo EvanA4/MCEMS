@@ -4,8 +4,11 @@ package net.mcems;
 import java.util.Objects;
 import net.mcems.PayloadListener.PayloadHandler;
 import org.bukkit.entity.Player;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class PayloadDispatcher implements PayloadHandler {
+    private final Logger logger = LoggerFactory.getLogger("PayloadDispatcher");
     private final HandshakeHandler handshakeHandler;
     private final PrivateMessageHandler privateMessageHandler;
 
@@ -29,13 +32,16 @@ public final class PayloadDispatcher implements PayloadHandler {
         Objects.requireNonNull(payload, "payload");
 
         if (payload instanceof NetworkPayloads.OfferPayload offerPayload) {
+            logger.info("Processing an offer!");
             handshakeHandler.handleOffer(sender, offerPayload.offer());
         } else if (payload instanceof NetworkPayloads.ResponsePayload responsePayload) {
+            logger.info("Processing a response!");
             handshakeHandler.handleResponse(
                     sender,
                     responsePayload.response()
             );
         } else if (payload instanceof NetworkPayloads.MessagePayload messagePayload) {
+            logger.info("Processing a message!");
             privateMessageHandler.handleMessage(
                     sender,
                     messagePayload.envelope()
