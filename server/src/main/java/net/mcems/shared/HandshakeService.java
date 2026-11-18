@@ -35,11 +35,11 @@ public final class HandshakeService {
         validateId(recipientId, "recipientId");
 
         if (senderId.equals(recipientId)) {
-            throw new IllegalArgumentException("Sender and recipient must differ");
+            throw new IllegalArgumentException("You cannot message yourself.");
         }
         removeExpiredPending();
         if (pending.size() >= MAX_PENDING_HANDSHAKES) {
-            throw new IllegalStateException("Too many pending handshakes");
+            throw new IllegalStateException("There are too many pending handshakes.");
         }
 
         UUID sessionId = UUID.randomUUID();
@@ -106,12 +106,12 @@ public final class HandshakeService {
         PendingHandshake handshake = pending.get(response.sessionId);
         if (handshake == null) {
             throw new GeneralSecurityException(
-                    "Unknown or expired handshake response");
+                    "Unknown or expired handshake response.");
         }
         if (!handshake.senderId.equals(response.recipientId)
                 || !handshake.recipientId.equals(response.senderId)) {
             throw new GeneralSecurityException(
-                    "Handshake response identities do not match");
+                    "Handshake response identities do not match.");
         }
 
         PublicKey peerPublicKey = PublicKeyCodec.decode(response.publicKey);
@@ -147,7 +147,7 @@ public final class HandshakeService {
                 || offer.senderId.equals(offer.recipientId)
                 || offer.salt.length != SALT_BYTES
                 || offer.publicKey.length == 0) {
-            throw new GeneralSecurityException("Invalid handshake offer");
+            throw new GeneralSecurityException("Invalid handshake offer.");
         }
     }
 
