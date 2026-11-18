@@ -84,26 +84,25 @@ public final class SessionManager {
         return true;
     }
 
-    public synchronized void removeSession(UUID sessionId) {
-        Session session = sessions.remove(sessionId);
-        if (session != null) {
-            session.clearKey();
-        }
-    }
-
-    /** Removes expired sessions and clears their stored key arrays. */
-    public synchronized void removeExpiredSessions() {
-        long now = System.currentTimeMillis();
+    public synchronized void removeSessionsForPeer(String peerId) {
+        Objects.requireNonNull(peerId, "peerId");
         Iterator<Session> iterator = sessions.values().iterator();
-
         while (iterator.hasNext()) {
             Session session = iterator.next();
-            if (session.expiresAtEpochMillis <= now) {
+            if (session.peerId.equals(peerId)) {
                 session.clearKey();
                 iterator.remove();
             }
         }
     }
+
+    public synchronized void clear() {
+        for (Session session : sessions.values()) {
+            session.clearKey();
+        }
+        sessions.clear();
+    }
+
 
     private Session requireActiveSession(UUID sessionId) {
         Session session = getActiveSession(sessionId);

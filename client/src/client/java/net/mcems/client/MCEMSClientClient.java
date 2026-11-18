@@ -6,6 +6,8 @@ import java.security.GeneralSecurityException;
 import java.util.*;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.mcems.*;
 import net.mcems.shared.*;
 import net.minecraft.client.Minecraft;
@@ -24,6 +26,7 @@ public final class MCEMSClientClient implements ClientModInitializer {
 	private MessageCipher messageCipher;
 
 	private final Map<String, UUID> sessionsByPeer = new HashMap<>();
+	private final Set<String> previousOnlineIds = new HashSet<>();
 
 	@Override
 	public void onInitializeClient() {
@@ -46,6 +49,15 @@ public final class MCEMSClientClient implements ClientModInitializer {
 					this::startHandshake,
 					this::sendPrivateMessage
 			).register();
+
+			ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
+			ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clearLocalSessions());
+			ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+				previousOnlineIds.clear();
+				handler.getListedOnlinePlayers().stream()
+						.map(entry -> entry.getProfile().id().toString())
+						.forEach(previousOnlineIds::add);
+			});
 		} catch (GeneralSecurityException e) {
 			LOGGER.error("Could not initialize secure messaging", e);
 		}
@@ -287,4 +299,37 @@ public final class MCEMSClientClient implements ClientModInitializer {
 		return player.getStringUUID();
 	}
 
+	private void onClientTick(Minecraft client) {
+		var connection = client.getConnection();
+		if (connection == null) {
+			clearLocalSessions();
+			return;
+		}
+
+		Set<String> currentOnlineIds = connection.getListedOnlinePlayers().stream()
+				.map(entry -> entry.getProfile().id().toString())
+				.collect(java.util.stream.Collectors.toSet());
+
+		for (String departedId : previousOnlineIds) {
+			if (!currentOnlineIds.contains(departedId)) {
+				invalidatePeer(departedId);
+			}
+		}
+
+		previousOnlineIds.clear();
+		previousOnlineIds.addAll(currentOnlineIds);
+	}
+
+	private void invalidatePeer(String peerId) {
+		sessionManager.removeSessionsForPeer(peerId);
+		sessionsByPeer.remove(peerId);
+	}
+
+	private void clearLocalSessions() {
+		if (sessionManager != null) {
+			sessionManager.clear();
+		}
+		sessionsByPeer.clear();
+		previousOnlineIds.clear();
+	}
 }
