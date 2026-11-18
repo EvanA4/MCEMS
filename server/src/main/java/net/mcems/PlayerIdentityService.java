@@ -2,6 +2,8 @@ package net.mcems;
 
 import java.util.Objects;
 import java.util.UUID;
+
+import net.mcems.shared.ProtocolConstants;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -23,7 +25,7 @@ public final class PlayerIdentityService {
     public Player findOnlinePlayerById(String playerId) {
         if (playerId == null || playerId.isBlank()
                 || playerId.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
-                > net.mcems.ProtocolConstants.MAX_ID_BYTES) {
+                > ProtocolConstants.MAX_ID_BYTES) {
             return null;
         }
 

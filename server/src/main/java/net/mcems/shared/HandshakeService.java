@@ -1,4 +1,4 @@
-package net.mcems;
+package net.mcems.shared;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

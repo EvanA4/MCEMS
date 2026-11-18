@@ -1,4 +1,4 @@
-package net.mcems;
+package net.mcems.shared;
 
 import java.io.*;
 import java.nio.ByteBuffer;

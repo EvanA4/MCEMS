@@ -1,4 +1,4 @@
-package net.mcems;
+package net.mcems.shared;
 
 /**
  * Shared wire-protocol constants for the Fabric client and Paper plugin.

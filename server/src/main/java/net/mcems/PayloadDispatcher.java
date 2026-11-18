@@ -3,6 +3,9 @@ package net.mcems;
 
 import java.util.Objects;
 import net.mcems.PayloadListener.PayloadHandler;
+import net.mcems.shared.HandshakeService;
+import net.mcems.shared.MessageEnvelope;
+import net.mcems.shared.NetworkPayloads;
 import org.bukkit.entity.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,12 +60,12 @@ public final class PayloadDispatcher implements PayloadHandler {
     public interface HandshakeHandler {
         void handleOffer(
                 Player sender,
-                net.mcems.HandshakeService.Offer offer
+                HandshakeService.Offer offer
         ) throws Exception;
 
         void handleResponse(
                 Player sender,
-                net.mcems.HandshakeService.Response response
+                HandshakeService.Response response
         ) throws Exception;
     }
 
@@ -70,7 +73,7 @@ public final class PayloadDispatcher implements PayloadHandler {
     public interface PrivateMessageHandler {
         void handleMessage(
                 Player sender,
-                net.mcems.MessageEnvelope envelope
+                MessageEnvelope envelope
         ) throws Exception;
     }
 }

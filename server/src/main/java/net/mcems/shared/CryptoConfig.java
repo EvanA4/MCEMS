@@ -1,4 +1,4 @@
-package net.mcems;
+package net.mcems.shared;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;

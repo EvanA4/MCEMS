@@ -1,5 +1,6 @@
 package net.mcems;
 
+import net.mcems.shared.ProtocolConstants;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +58,6 @@ public final class Main extends JavaPlugin {
                     sessionCleanupListener,
                     this
             );
-
-            registerCommand("securemsg", new SecureMessageCommand());
 
             getLogger().info("MCEMS secure-message demo enabled.");
         } catch (RuntimeException e) {
