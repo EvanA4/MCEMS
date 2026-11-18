@@ -1,5 +1,7 @@
 package net.mcems;
 
+import net.mcems.shared.CryptoConfig;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

@@ -7,6 +7,7 @@ import java.util.*;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.mcems.*;
+import net.mcems.shared.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;

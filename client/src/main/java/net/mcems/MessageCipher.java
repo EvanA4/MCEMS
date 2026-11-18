@@ -1,5 +1,7 @@
 package net.mcems;
 
+import net.mcems.shared.CryptoConfig;
+
 import java.security.GeneralSecurityException;
 import java.util.Objects;
 import javax.crypto.Cipher;
