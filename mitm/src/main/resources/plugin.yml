@@ -1,0 +1,6 @@
+name: mcems-server
+version: '${version}'
+
+main: net.mcems.Main
+api-version: '26.3'
+load: POSTWORLD
